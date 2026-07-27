@@ -294,9 +294,9 @@ https://digitalheroesco.com
 
 **Gourish Naik**
 
-GitHub: https://github.com/<your-username>
+GitHub: https://github.com/gourishnaikk
 
-LinkedIn: https://linkedin.com/in/<your-profile>
+LinkedIn: [https://linkedin.com/in/gourishnaikk](https://www.linkedin.com/in/gourish-naik-876171334/)
 
 ---
 
