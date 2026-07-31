@@ -1,0 +1,562 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<style>
+        @layer base {
+            html, body { margin: 0; padding: 0; }
+            body { overscroll-behavior: none; background: #020408; }
+            main > :first-child { margin-top: 0 !important; }
+            main > :last-child { margin-bottom: 0 !important; }
+        }
+        ::-webkit-scrollbar { display: none; }
+        .glass-header { background: rgba(16, 20, 25, 0.4); backdrop-filter: blur(24px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        .glow-text { text-shadow: 0 0 20px rgba(155, 203, 255, 0.5); }
+        .cinematic-border { border: 1px solid rgba(155, 203, 255, 0.1); transition: all 0.3s ease; }
+        .cinematic-border:hover { border-color: rgba(155, 203, 255, 0.4); box-shadow: 0 0 20px rgba(155, 203, 255, 0.15); }
+        .nav-link { position: relative; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .nav-link:hover { transform: translateY(-2px); text-shadow: 0 0 8px rgba(155, 203, 255, 0.8); }
+        
+        /* VisionOS Premium Styles */
+        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(40px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 32px; transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); position: relative; overflow: hidden; }
+        .glass-card:hover { border-color: rgba(155, 203, 255, 0.3); background: rgba(255, 255, 255, 0.06); transform: translateY(-4px); }
+        .glass-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 0%, rgba(155, 203, 255, 0.1), transparent); pointer-events: none; }
+        
+        .stagger-in { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .stagger-in.visible { opacity: 1; transform: translateY(0); }
+        
+        .animated-border { position: relative; }
+        .animated-border::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; border: 1px solid transparent; background: linear-gradient(90deg, transparent, rgba(155, 203, 255, 0.4), transparent) border-box; -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0); -webkit-mask-composite: destination-out; mask-composite: exclude; animation: borderMove 4s linear infinite; }
+        
+        @keyframes borderMove { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+
+        #scanner-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 32px; }
+    </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-bright": "#363940",
+                        "secondary-container": "#00f1fd",
+                        "primary-fixed-dim": "#9bcbff",
+                        "on-secondary-fixed": "#002022",
+                        "on-secondary-container": "#006a6f",
+                        "inverse-surface": "#e0e2eb",
+                        "secondary-fixed-dim": "#00dce6",
+                        "on-primary-container": "#003e68",
+                        "on-surface-variant": "#bfc7d3",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#004a7a",
+                        "surface-container-low": "#181c22",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        outline: "#8a919c",
+                        primary: "#9bcbff",
+                        "inverse-primary": "#00629f",
+                        tertiary: "#c6c6c7",
+                        "on-error": "#690005",
+                        background: "#101419",
+                        "inverse-on-surface": "#2d3137",
+                        "on-primary-fixed": "#001d34",
+                        "tertiary-fixed": "#e2e2e2",
+                        "surface-container-high": "#262a31",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "on-primary": "#003256",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "surface-dim": "#101419",
+                        "surface-variant": "#31353c",
+                        "error-container": "#93000a",
+                        "secondary-fixed": "#6ff6ff",
+                        "on-tertiary-container": "#3b3d3d",
+                        "on-tertiary": "#2f3131",
+                        "on-surface": "#e0e2eb",
+                        "surface-tint": "#9bcbff",
+                        error: "#ffb4ab",
+                        "primary-fixed": "#d0e4ff",
+                        "on-secondary-fixed-variant": "#004f53",
+                        surface: "#101419",
+                        "outline-variant": "#404751",
+                        "on-secondary": "#00373a",
+                        "primary-container": "#4facfe",
+                        "surface-container": "#1c2026",
+                        "tertiary-container": "#a6a7a7",
+                        secondary: "#dcfdff",
+                        "surface-container-lowest": "#0b0e14",
+                        "surface-container-highest": "#31353c",
+                        "on-background": "#e0e2eb"
+                    },
+                    borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", xxl: "2rem", "3xl": "32px", full: "9999px" },
+                    spacing: { "stack-sm": "0.5rem", "container-max": "1280px", gutter: "2rem", "section-gap": "4.5rem", "stack-md": "1.5rem", "margin-mobile": "1.25rem" },
+                    fontFamily: {
+                        "label-mono": ["Inter", "monospace"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-lg": ["Inter", "sans-serif"],
+                        "display-hero": ["Inter", "sans-serif"],
+                        "headline-md": ["Inter", "sans-serif"],
+                        "headline-lg-mobile": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"]
+                    },
+                    fontSize: { "label-mono": ["12px", { lineHeight: "16px", letterSpacing: "0.1em", fontWeight: "500" }], "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }], "headline-lg": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }], "display-hero": ["72px", { lineHeight: "80px", letterSpacing: "-0.04em", fontWeight: "800" }], "headline-md": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }], "headline-lg-mobile": ["32px", { lineHeight: "40px", fontWeight: "700" }], "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }] }
+                }
+            }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
+</head>
+<body class="bg-surface font-body-md text-on-surface selection:bg-primary/30">
+<div class="fixed inset-0 z-0 pointer-events-none overflow-hidden opacity-40">
+<div class="absolute inset-0 z-10" id="threejs-container-ANIMATION_7"></div>
+</div>
+<header class="fixed top-0 w-full z-50 glass-header">
+<div class="h-20 w-full px-gutter flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded shadow-[0_0_20px_rgba(155,203,255,0.4)] flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-[20px]">bolt</span>
+</div>
+<span class="font-display-hero text-[32px] text-primary glow-text tracking-tighter">Page Pulse</span>
+</div>
+<nav class="hidden md:flex items-center gap-12 absolute left-1/2 -translate-x-1/2">
+<a class="nav-link font-label-mono text-label-mono text-on-surface-variant hover:text-primary transition-colors tracking-widest uppercase" href="#">Features</a>
+<a class="nav-link font-label-mono text-label-mono text-on-surface-variant hover:text-primary transition-colors tracking-widest uppercase" href="#">How it Works</a>
+<a class="nav-link font-label-mono text-label-mono text-on-surface-variant hover:text-primary transition-colors tracking-widest uppercase" href="#">GitHub</a>
+</nav>
+<div class="flex items-center gap-6">
+<button class="cinematic-border bg-white/5 backdrop-blur-xl px-6 py-2 rounded-full font-label-mono text-label-mono text-primary uppercase tracking-widest hover:bg-primary hover:text-on-primary transition-all" id="analyze-btn-top">Analyze</button>
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-[0_0_15px_rgba(155,203,255,0.2)]">
+<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+</div>
+</div>
+</div>
+</header>
+<main class="relative z-10 w-full pt-20">
+<div class="flex flex-col w-full overflow-hidden">
+<!-- Hero Section -->
+<section class="relative flex flex-col items-center justify-center px-gutter py-16 pb-4 min-h-[500px]">
+<div class="absolute inset-0 pointer-events-none">
+<div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/10 blur-[120px] rounded-full"></div>
+<div class="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
+</div>
+<div class="relative z-10 text-center max-w-4xl mx-auto flex flex-col items-center">
+<div class="mb-6 inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/5 backdrop-blur-2xl border border-white/10 shadow-xl">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse shadow-[0_0_10px_#00f1fd]"></span>
+<span class="font-label-mono text-label-mono text-primary uppercase tracking-[0.2em]">System Status: Ready</span>
+</div>
+<h1 class="font-display-hero text-display-hero md:text-[140px] leading-none mb-6 tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-primary-fixed-dim to-primary/40 filter drop-shadow-[0_0_30px_rgba(155,203,255,0.4)]">
+                    PAGE PULSE
+                </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-10 leading-relaxed opacity-80">
+                    Engineered for high-fidelity performance audits. Deploy cinematic-grade precision to your web vitals with our real-time neural analyzer.
+                </p>
+<!-- URL Input -->
+<div class="w-full max-w-2xl group relative transition-transform duration-500 ease-out" id="input-container">
+<div class="absolute -inset-1 bg-gradient-to-r from-primary/20 via-secondary-container/20 to-primary/20 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+<div class="relative flex items-center p-2 bg-black/10 backdrop-blur-[32px] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+<div class="flex-1 flex items-center px-6">
+<span class="material-symbols-outlined text-primary/50 mr-4">language</span>
+<input class="w-full bg-transparent border-none outline-none text-on-surface font-body-md placeholder:text-on-surface-variant/30 py-4 focus:ring-0" id="url-input" placeholder="https://your-digital-empire.com" type="text">
+</div>
+<button class="relative overflow-hidden px-8 py-4 bg-primary text-on-primary rounded-xl font-label-mono text-label-mono uppercase tracking-widest flex items-center gap-2 group/btn transition-all active:scale-95 shadow-[0_0_20px_rgba(155,203,255,0.3)] hover:shadow-[0_0_35px_rgba(155,203,255,0.5)]" id="analyze-main-btn" onclick="document.getElementById('url-input').blur(); runAnalysis();">
+<span class="relative z-10">Analyze</span>
+<span class="material-symbols-outlined relative z-10 text-[18px] group-hover/btn:translate-x-1 transition-transform">bolt</span>
+<div class="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-40 group-hover/btn:animate-[shine_1s_ease-in-out]"></div>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Results Section -->
+<section class="px-gutter pb-12 relative min-h-[500px]" id="results">
+<div class="max-w-container-max mx-auto">
+<!-- 1. Placeholder (Awaiting Signal) -->
+<div class="glass-card w-full min-h-[400px] flex flex-col items-center justify-center p-12 transition-all duration-700" id="awaiting-signal">
+<div class="w-20 h-20 mb-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shadow-inner animate-pulse">
+<span class="material-symbols-outlined text-primary text-4xl">radar</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4">Awaiting Signal</h3>
+<p class="font-body-md text-on-surface-variant max-w-sm text-center">Enter a URL above to initiate a deep-scan audit. Results will synchronize here in real-time.</p>
+</div>
+<!-- 2. Loading Scanner -->
+<div class="hidden glass-card w-full min-h-[400px] flex flex-col items-center justify-center p-12 overflow-hidden" id="loading-scanner">
+<canvas id="scanner-canvas"></canvas>
+<div class="relative z-10 mt-8 text-center bg-black/40 backdrop-blur-md px-12 py-8 rounded-3xl border border-white/10">
+<div class="w-16 h-16 mx-auto mb-6 border-t-2 border-primary rounded-full animate-spin"></div>
+<p class="font-label-mono text-primary uppercase tracking-[0.4em] text-xl glow-text transition-all duration-300" id="loading-status">Connecting...</p>
+<div class="mt-4 w-64 h-1 bg-white/5 rounded-full overflow-hidden mx-auto">
+<div class="h-full bg-primary shadow-[0_0_10px_rgba(155,203,255,1)] transition-all duration-500 ease-out" id="progress-bar" style="width: 0%"></div>
+</div>
+</div>
+</div>
+<!-- 3. Premium Results Dashboard -->
+<div class="hidden flex flex-col gap-6 w-full relative" id="dashboard">
+<div class="absolute inset-0 pointer-events-none opacity-40" id="dashboard-bg-container"></div>
+<!-- Top Row: KPIs -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+<div class="glass-card p-10 stagger-kpi flex flex-col items-center justify-center text-center opacity-0">
+<div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(155,203,255,0.2)]">
+<span class="material-symbols-outlined text-primary text-4xl">check_circle</span>
+</div>
+<div class="text-on-surface-variant font-label-mono uppercase text-[10px] tracking-widest mb-1">Status Code</div>
+<div class="text-6xl font-display-hero text-white glow-text" id="stat-status">200</div>
+<div class="text-emerald-400 font-label-mono text-[9px] mt-2 uppercase tracking-widest">Request Successful</div>
+</div>
+<div class="glass-card p-10 stagger-kpi flex flex-col items-center justify-center text-center opacity-0">
+<div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(155,203,255,0.2)]">
+<span class="material-symbols-outlined text-primary text-4xl">timer</span>
+</div>
+<div class="text-on-surface-variant font-label-mono uppercase text-[10px] tracking-widest mb-1">Response Time</div>
+<div class="flex items-baseline gap-1">
+<div class="text-6xl font-display-hero text-white glow-text" id="stat-latency">261</div>
+<span class="text-2xl font-body-md text-primary/60">ms</span>
+</div>
+<div class="text-primary font-label-mono text-[9px] mt-2 uppercase tracking-widest">Latency Optimized</div>
+</div>
+</div>
+<!-- Middle Section: Website Information -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+<div class="glass-card p-10 stagger-info opacity-0">
+<div class="text-on-surface-variant font-label-mono uppercase text-[10px] tracking-[0.3em] mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">title</span>
+      Page Title
+    </div>
+<h2 class="text-2xl font-headline-md text-white leading-tight tracking-tight glow-text" id="stat-title">Apex Digital - Futurist Design Studio</h2>
+</div>
+<div class="glass-card p-10 stagger-info opacity-0">
+<div class="text-on-surface-variant font-label-mono uppercase text-[10px] tracking-[0.3em] mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">description</span>
+      Meta Description
+    </div>
+<p class="text-sm font-body-md text-on-surface-variant leading-relaxed opacity-90" id="stat-desc">
+      Pioneering the next generation of spatial computing interfaces and neural-ready web architectures for modern enterprises. Delivering precision performance audits with deep-scan reliability.
+    </p>
+</div>
+</div>
+<!-- Bottom Row: Metric Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+<div class="glass-card p-8 stagger-metrics animated-border opacity-0">
+<div class="flex items-start justify-between mb-6">
+<div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xl">format_h1</span>
+</div>
+<span class="text-[9px] font-label-mono text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded tracking-tighter">HEALTHY</span>
+</div>
+<div class="text-on-surface-variant font-label-mono uppercase text-[10px] tracking-widest mb-1">H1 Count</div>
+<div class="text-4xl font-display-hero text-white" id="stat-h1">1</div>
+</div>
+<div class="glass-card p-8 stagger-metrics animated-border opacity-0">
+<div class="flex items-start justify-between mb-6">
+<div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xl">image</span>
+</div>
+<span class="text-[9px] font-label-mono text-error bg-error/10 px-2 py-1 rounded tracking-tighter">ACTION REQ.</span>
+</div>
+<div class="text-on-surface-variant font-label-mono uppercase text-[10px] tracking-widest mb-1">Images Missing Alt</div>
+<div class="text-4xl font-display-hero text-error" id="stat-alt">17</div>
+</div>
+<div class="glass-card p-8 stagger-metrics animated-border opacity-0">
+<div class="flex items-start justify-between mb-6">
+<div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xl">sticky_note_2</span>
+</div>
+<span class="text-[9px] font-label-mono text-primary bg-primary/10 px-2 py-1 rounded tracking-tighter">DENSE</span>
+</div>
+<div class="text-on-surface-variant font-label-mono uppercase text-[10px] tracking-widest mb-1">Word Count</div>
+<div class="text-4xl font-display-hero text-white" id="stat-words">1,284</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer Overlay Section -->
+<section class="px-gutter mt-4 pb-6">
+<div class="max-w-container-max mx-auto p-10 glass-card flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
+<div>
+<h4 class="font-headline-md text-primary mb-2">Build for Digital Heroes</h4>
+<p class="font-body-md text-on-surface-variant">Engineered as a Training Task for the next generation of developers.</p>
+</div>
+<div class="flex gap-8">
+<a class="group flex flex-col items-center gap-2" href="#">
+<div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">code</span>
+</div>
+<span class="font-label-mono text-[10px] uppercase tracking-widest text-on-surface-variant">GitHub</span>
+</a>
+<a class="group flex flex-col items-center gap-2" href="#">
+<div class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">hub</span>
+</div>
+<span class="font-label-mono text-[10px] uppercase tracking-widest text-on-surface-variant">LinkedIn</span>
+</a>
+</div>
+</div>
+</section>
+</div>
+</main>
+<footer class="relative z-10 w-full bg-black/20 backdrop-blur-md border-t border-white/5 py-12">
+<div class="max-w-container-max mx-auto px-gutter flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="flex items-center gap-2">
+<span class="font-display-hero text-[24px] text-primary/60">Page Pulse</span>
+</div>
+<div class="text-on-surface-variant font-body-md text-sm">© 2024 Page Pulse. Engineered for high-fidelity performance.</div>
+<div class="flex gap-6">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">terminal</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">public</span>
+</div>
+</div>
+</footer>
+<style>
+    @keyframes shine { 100% { left: 125%; } }
+    .stagger-kpi.visible, .stagger-info.visible, .stagger-metrics.visible { opacity: 1; transform: translateY(0); }
+    .stagger-kpi, .stagger-info, .stagger-metrics { transform: translateY(20px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+</style>
+<script>
+    // BACKGROUND ANIMATION (Original Particles)
+    (function() {
+        const container = document.getElementById('threejs-container-ANIMATION_7');
+        if (!container) return;
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+        const mainGroup = new THREE.Group();
+        scene.add(mainGroup);
+        const geometries = [new THREE.IcosahedronGeometry(0.2, 0), new THREE.TorusGeometry(0.15, 0.02, 16, 32)];
+        const material = new THREE.MeshPhongMaterial({ color: 0x9bcbff, transparent: true, opacity: 0.4, shininess: 100 });
+        const objects = [];
+        for(let i = 0; i < 40; i++) {
+            const mesh = new THREE.Mesh(geometries[Math.floor(Math.random() * geometries.length)], material);
+            mesh.position.set((Math.random()-0.5)*15, (Math.random()-0.5)*15, (Math.random()-0.5)*10-5);
+            mainGroup.add(mesh);
+            objects.push({ mesh, rotationSpeed: (Math.random()-0.5)*0.01, floatSpeed: Math.random()*0.005, offset: Math.random()*Math.PI*2 });
+        }
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const pl = new THREE.PointLight(0x4facfe, 1, 20);
+        pl.position.set(5, 5, 5);
+        scene.add(pl);
+        camera.position.z = 5;
+        let mX = 0, mY = 0;
+        window.addEventListener('mousemove', (e) => { mX = (e.clientX/window.innerWidth-0.5)*2; mY = (e.clientY/window.innerHeight-0.5)*2; });
+        const anim = (t) => {
+            requestAnimationFrame(anim);
+            objects.forEach(o => { o.mesh.rotation.x += o.rotationSpeed; o.mesh.rotation.y += o.rotationSpeed; o.mesh.position.y += Math.sin(t*0.001 + o.offset)*0.002; });
+            mainGroup.position.x += (mX*0.5 - mainGroup.position.x)*0.05;
+            mainGroup.position.y += (-mY*0.5 - mainGroup.position.y)*0.05;
+            renderer.render(scene, camera);
+        };
+        anim(0);
+    })();
+
+    // LOGIC FOR SCANNER AND DASHBOARD
+    const analyzeMainBtn = document.getElementById('analyze-main-btn');
+    const analyzeTopBtn = document.getElementById('analyze-btn-top');
+    const awaitingSignal = document.getElementById('awaiting-signal');
+    const loadingScanner = document.getElementById('loading-scanner');
+    const dashboard = document.getElementById('dashboard');
+    const loadingStatus = document.getElementById('loading-status');
+    const progressBar = document.getElementById('progress-bar');
+
+    const stages = [
+        { text: "Connecting...", progress: 20 },
+        { text: "Crawling Website...", progress: 45 },
+        { text: "Extracting Metadata...", progress: 70 },
+        { text: "Analyzing Page...", progress: 95 }
+    ];
+
+    function runAnalysis() {
+        window.scrollTo({ top: document.getElementById('results').offsetTop - 60, behavior: 'smooth' });
+        awaitingSignal.classList.add('hidden');
+        dashboard.classList.add('hidden');
+        loadingScanner.classList.remove('hidden');
+        
+        initScannerShader();
+
+        let step = 0;
+        const interval = setInterval(() => {
+            if (step < stages.length) {
+                loadingStatus.textContent = stages[step].text;
+                progressBar.style.width = stages[step].progress + '%';
+                step++;
+            } else {
+                clearInterval(interval);
+                setTimeout(showDashboard, 800);
+            }
+        }, 800);
+    }
+
+    function showDashboard() {
+        loadingScanner.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+        
+        initDashboardBg();
+
+        // Staggered Entrance
+        const kpis = dashboard.querySelectorAll('.stagger-kpi');
+        const info = dashboard.querySelectorAll('.stagger-info');
+        const metrics = dashboard.querySelectorAll('.stagger-metrics');
+
+        kpis.forEach((el, i) => {
+            setTimeout(() => el.classList.add('visible'), i * 150);
+        });
+        
+        setTimeout(() => {
+            info.forEach(el => el.classList.add('visible'));
+        }, 400);
+
+        setTimeout(() => {
+            metrics.forEach((el, i) => {
+                setTimeout(() => el.classList.add('visible'), i * 150);
+            });
+        }, 700);
+
+        // Counters (Simulated)
+        animateValue("stat-latency", 0, 261, 2000);
+        animateValue("stat-alt", 0, 17, 1500);
+    }
+
+    function animateValue(id, start, end, duration) {
+        const obj = document.getElementById(id);
+        if (!obj) return;
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+            if (progress < 1) window.requestAnimationFrame(step);
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    analyzeMainBtn.addEventListener('click', runAnalysis);
+    analyzeTopBtn.addEventListener('click', runAnalysis);
+
+    // SCANNER SHADER
+    function initScannerShader() {
+        const canvas = document.getElementById('scanner-canvas');
+        const gl = canvas.getContext('webgl');
+        if (!gl) return;
+
+        const vs = `attribute vec2 position; void main() { gl_Position = vec4(position, 0.0, 1.0); }`;
+        const fs = `
+            precision highp float;
+            uniform float u_time;
+            uniform vec2 u_resolution;
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+            void main() {
+                vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+                vec2 p = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+                float scanPos = sin(u_time * 1.5) * 0.8;
+                float scanLine = smoothstep(0.02, 0.0, abs(p.y - scanPos));
+                float scanGlow = smoothstep(0.4, 0.0, abs(p.y - scanPos));
+                vec3 color = vec3(0.02, 0.04, 0.1) * (1.0 - length(p) * 0.5);
+                color += vec3(0.3, 0.6, 1.0) * scanLine;
+                color += vec3(0.1, 0.3, 0.6) * scanGlow * 0.5;
+                float n = hash(uv + u_time * 0.1);
+                if (n > 0.98) color += vec3(0.4, 0.7, 1.0) * scanGlow;
+                vec2 grid = fract(uv * 20.0);
+                float gridLines = smoothstep(0.05, 0.0, grid.x) + smoothstep(0.05, 0.0, grid.y);
+                color += vec3(0.2, 0.4, 0.8) * gridLines * 0.1 * (scanGlow + 0.2);
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+        function createShader(gl, type, source) {
+            const s = gl.createShader(type); gl.shaderSource(s, source); gl.compileShader(s); return s;
+        }
+        const program = gl.createProgram();
+        gl.attachShader(program, createShader(gl, gl.VERTEX_SHADER, vs));
+        gl.attachShader(program, createShader(gl, gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(program); gl.useProgram(program);
+
+        const posBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
+        const posLoc = gl.getAttribLocation(program, "position");
+        gl.enableVertexAttribArray(posLoc);
+        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+        const timeLoc = gl.getUniformLocation(program, "u_time");
+        const resLoc = gl.getUniformLocation(program, "u_resolution");
+
+        function render(t) {
+            if (loadingScanner.classList.contains('hidden')) return;
+            canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.uniform1f(timeLoc, t * 0.001);
+            gl.uniform2f(resLoc, canvas.width, canvas.height);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+    }
+
+    // DASHBOARD BACKGROUND
+    function initDashboardBg() {
+        const container = document.getElementById('dashboard-bg-container');
+        if (!container || container.children.length > 0) return;
+        
+        (function() {
+          const width = container.clientWidth || 800;
+          const height = container.clientHeight || 400;
+
+          const scene = new THREE.Scene();
+          const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+          const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+          renderer.setSize(width, height);
+          renderer.setPixelRatio(window.devicePixelRatio);
+          container.appendChild(renderer.domElement);
+
+          const group = new THREE.Group();
+          scene.add(group);
+
+          const geometries = [
+            new THREE.IcosahedronGeometry(0.5, 0),
+            new THREE.TorusGeometry(0.4, 0.05, 16, 32),
+            new THREE.OctahedronGeometry(0.4, 0)
+          ];
+          
+          const material = new THREE.MeshPhongMaterial({
+            color: 0x4facfe,
+            transparent: true,
+            opacity: 0.15,
+            shininess: 100
+          });
+
+          const objects = [];
+          for(let i = 0; i < 12; i++) {
+            const mesh = new THREE.Mesh(geometries[i % geometries.length], material);
+            mesh.position.set((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 5);
+            group.add(mesh);
+            objects.push({ mesh, rotX: Math.random() * 0.02, rotY: Math.random() * 0.02, float: Math.random() * 0.01, offset: Math.random() * Math.PI * 2 });
+          }
+
+          scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+          const pl = new THREE.PointLight(0x4facfe, 1, 20);
+          pl.position.set(5, 5, 5);
+          scene.add(pl);
+          camera.position.z = 8;
+
+          let mX = 0, mY = 0;
+          window.addEventListener('mousemove', (e) => { mX = (e.clientX / window.innerWidth - 0.5) * 2; mY = (e.clientY / window.innerHeight - 0.5) * 2; });
+
+          const animate = (time) => {
+            if (dashboard.classList.contains('hidden')) return;
+            requestAnimationFrame(animate);
+            objects.forEach(obj => {
+              obj.mesh.rotation.x += obj.rotX;
+              obj.mesh.rotation.y += obj.rotY;
+              obj.mesh.position.y += Math.sin(time * 0.001 + obj.offset) * obj.float;
+            });
+            group.position.x += (mX - group.position.x) * 0.05;
+            group.position.y += (-mY - group.position.y) * 0.05;
+            renderer.render(scene, camera);
+          };
+          animate(0);
+        })();
+    }
+</script>
+</body></html>

@@ -1,37 +1,42 @@
 import ErrorAlert from './ErrorAlert.jsx';
-import LoadingIndicator from './LoadingIndicator.jsx';
-import heroImage from '../assets/hero.png';
 import UrlAnalysisForm from './UrlAnalysisForm.jsx';
 
 function Hero({ errorMessage, isLoading, onAnalyze }) {
-  return (
-    <section className="relative isolate flex flex-1 items-center overflow-hidden bg-slate-950 px-4 py-14 text-white sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-      <img
-        src={heroImage}
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute right-1/2 top-8 -z-10 h-64 translate-x-1/2 opacity-20 sm:right-8 sm:top-1/2 sm:h-80 sm:-translate-y-1/2 sm:translate-x-0 sm:opacity-25 lg:right-16 lg:h-[28rem]"
-      />
-      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,#4338ca,transparent_30%),linear-gradient(135deg,#020617_0%,#0f172a_48%,#111827_100%)]" />
-
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="max-w-3xl">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300 sm:mb-5 sm:text-sm">
-            SEO and accessibility insights
-          </p>
-          <h1 className="max-w-3xl text-3xl font-bold leading-tight tracking-normal sm:text-5xl lg:text-6xl">
-            Analyze any webpage instantly
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-200 sm:mt-6 sm:text-xl sm:leading-8">
-            Enter a URL to inspect important SEO and accessibility metrics.
-          </p>
-          <UrlAnalysisForm isLoading={isLoading} onSubmit={onAnalyze} />
-          {isLoading ? <LoadingIndicator /> : null}
-          <ErrorAlert message={errorMessage} />
-        </div>
-      </div>
-    </section>
-  );
+    return (
+        <section className="relative flex flex-col items-center justify-center px-gutter py-16 pb-4 min-h-[500px]">
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/10 blur-[120px] rounded-full" />
+                <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+            </div>
+            <div className="relative z-10 text-center max-w-4xl mx-auto flex flex-col items-center w-full">
+                <div className="mb-6 inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white/5 backdrop-blur-2xl border border-white/10 shadow-xl">
+                    <span className="w-2 h-2 rounded-full bg-secondary-container animate-pulse shadow-[0_0_10px_#00f1fd]" />
+                    <span className="font-label-mono text-label-mono text-primary uppercase tracking-[0.2em]">System Status: Ready</span>
+                </div>
+                <h1 className="font-display-hero text-display-hero md:text-[140px] leading-none mb-6 tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-primary-fixed-dim to-primary/40 filter drop-shadow-[0_0_30px_rgba(155,203,255,0.4)] pixel-load glimmer-text">
+                    PAGE PULSE
+                </h1>
+                <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-10 leading-relaxed opacity-80">
+                    Engineered for high-fidelity performance audits. Powerful website intelligence with elegant visual reports and real-time analysis.
+                </p>
+                <div className="w-full flex justify-center mt-4">
+                    <UrlAnalysisForm isLoading={isLoading} onSubmit={onAnalyze} />
+                </div>
+                {errorMessage && (
+                     <div className="absolute top-20 right-4 z-50">
+                         <div className="bg-error/10 border border-error/20 px-6 py-4 rounded-xl backdrop-blur-md shadow-2xl">
+                             <div className="flex items-center gap-3">
+                                 <div className="w-8 h-8 rounded-full bg-error/20 flex flex-col items-center justify-center">
+                                      <span className="material-symbols-outlined text-error text-lg">error</span>
+                                 </div>
+                                 <p className="font-body-md text-error">{errorMessage}</p>
+                             </div>
+                         </div>
+                     </div>
+                )}
+            </div>
+        </section>
+    );
 }
 
 export default Hero;
